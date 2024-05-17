@@ -1,0 +1,217 @@
+#include <Adafruit_MLX90614.h>
+#include<OakOLED.h>
+#include <ESP8266WiFi.h>
+#include <Wire.h>
+#define SW_1 10
+#define SW_2 D7
+#define Buzzer D8
+OakOLED oled;
+
+int X;
+char buffer[10];
+
+char sbuffer[14], ch;
+unsigned char pos;
+unsigned char read1, read2, read3;
+boolean newData=false;
+
+Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+
+void setup() {
+  Serial.begin(9600);
+  oled.begin();
+  oled.setTextSize(1);
+          oled.setCursor(0,0);
+          oled.println("Press Button 1 for   ECG");
+           oled.setTextSize(1);
+          oled.setCursor(0,20);
+          oled.println("Press Button 2 for   Temprature");
+           oled.setTextSize(1);
+          oled.setCursor(0,40);
+          oled.println("Press Button 3 for   B.P");
+          oled.display();
+  digitalWrite(SW_1,LOW);
+  digitalWrite(SW_2,LOW);
+  digitalWrite(Buzzer,LOW);
+  pinMode(SW_1,INPUT_PULLUP);
+  pinMode(SW_2,INPUT_PULLUP);
+  pinMode(Buzzer,OUTPUT);
+  //pinMode(SW_3,INPUT_PULLUP);
+
+  pinMode(D5, INPUT); // Setup for leads off detection LO +
+  pinMode(D6, INPUT); // Setup for leads off detection LO -
+
+  while (!Serial);
+
+  if (!mlx.begin()) {
+    Serial.println("Error connecting to MLX sensor. Check wiring.");
+    while (1);
+  };
+  }
+
+  void loop()
+  {
+          if(digitalRead(SW_1)==LOW)
+  {
+    digitalWrite(Buzzer,HIGH);
+    delay(300);
+    digitalWrite(Buzzer,LOW);
+  if((digitalRead(10) == 1)||(digitalRead(11) == 1)){
+    Serial.println('!');
+  }
+  else{
+
+    for(int i=0;i<20;i++)
+    {
+      
+    // send the value of analog input 0:
+      Serial.println(analogRead(A0));
+      X=analogRead(A0);
+      itoa(X,buffer,10); 
+          oled.setTextSize(1);
+          oled.setCursor(0,0);
+           oled.println("AD8232 SENSOR");
+          oled.setCursor(0,10);
+          oled.println("anlog value by sensor:");
+            oled.setTextSize(1);
+           oled.setCursor(0,20);
+             oled.println(X);
+             oled.setTextSize(1);
+              oled.setCursor(0,30);
+             oled.println("Button-1:-ECG");
+             oled.setTextSize(1);
+              oled.setCursor(0,40);
+             oled.println("Button-2:-Temp");
+             oled.setTextSize(1);
+              oled.setCursor(0,50);
+             oled.println("Button-3:-B.P");
+             oled.display();
+             delay(10);
+            oled.clearDisplay();       
+  }
+  }
+  }
+  float Final_temp1;
+  float Final_temp2;
+  if(digitalRead(SW_2)==LOW)
+  {
+    digitalWrite(Buzzer,HIGH);
+    delay(300);
+    digitalWrite(Buzzer,LOW);
+
+    for(int i=0;i<50;i++)
+    {
+      Final_temp1=mlx.readObjectTempC();
+      Final_temp2=mlx.readObjectTempF();
+  Serial.print("Ambient = "); Serial.print(mlx.readAmbientTempC());
+  Serial.print("*C\tObject = "); Serial.print(Final_temp1); Serial.println("*C");
+  Serial.print("Ambient = "); Serial.print(mlx.readAmbientTempF());
+  Serial.print("*F\tObject = "); Serial.print(Final_temp2); Serial.println("*F");
+  }
+  Serial.print("Final Temprature:- ");
+  Serial.print(Final_temp1);
+  Serial.println("*C");
+       oled.clearDisplay();
+          oled.setTextSize(1);
+          oled.setCursor(0,0);
+          oled.println("Final Temprature");
+            oled.setTextSize(1);
+           oled.setCursor(0,10);
+            oled.println(Final_temp1);
+             oled.setTextSize(1);
+           oled.setCursor(30,10);
+             oled.println("^C");
+             oled.setTextSize(1);
+           oled.setCursor(70,10);
+            oled.println(Final_temp2);
+             oled.setTextSize(1);
+           oled.setCursor(100,10);
+             oled.println("^F");
+             oled.setTextSize(1);
+              oled.setCursor(0,30);
+             oled.println("Button-1:-ECG");
+             oled.setTextSize(1);
+              oled.setCursor(0,40);
+             oled.println("Button-2:-Temp");
+              oled.setTextSize(1);
+              oled.setCursor(0,50);
+             oled.println("Button-3:-B.P");
+             oled.display();   
+  }
+
+  recvChar();
+  showNewData();
+  
+  void setup();
+  delay(500);
+    }
+
+    void recvChar() {
+if (Serial.available())
+{
+
+while(Serial.available())
+{
+//  Serial.println("Serial is available");
+ch = Serial.read(); //loop till character received
+if(ch==0x0A) // if received character is <LF>, 0x0A, 10 then process buffer
+{
+pos = 0; // buffer position reset for next reading
+newData=true;
+// extract data from serial buffer to 8 bit integer value
+// convert data from ASCII to decimal
+read1 = ((sbuffer[1]-'0')*100) + ((sbuffer[2]-'0')*10) +(sbuffer[3]-'0');
+read2 = ((sbuffer[6]-'0')*100) + ((sbuffer[7]-'0')*10) +(sbuffer[8]-'0');
+read3 = ((sbuffer[11]-'0')*100) + ((sbuffer[12]-'0')*10) +(sbuffer[13]-'0');
+}
+else
+{ //store serial data to buffer
+sbuffer[pos] = ch;
+pos++;
+}
+}
+}
+}
+
+void showNewData() {
+if (newData == true)
+{       
+Serial.println("Calculating Results ... ");
+Serial.println(read1);
+Serial.println(read2);
+Serial.println(read3);
+oled.clearDisplay();
+          oled.setTextSize(1);
+          oled.setCursor(0,0);
+          oled.println("B.P & Pulse");
+            oled.setTextSize(1);
+           oled.setCursor(0,10);
+            oled.println("Sys:-");
+             oled.setTextSize(1);
+           oled.setCursor(30,10);
+             oled.println(read1);
+             oled.setTextSize(1);
+           oled.setCursor(70,10);
+            oled.println("DiaS:-");
+             oled.setTextSize(1);
+           oled.setCursor(100,10);
+             oled.println(read2);
+             oled.setTextSize(1);
+           oled.setCursor(0,20);
+            oled.println("Pulse:-");
+             oled.setTextSize(1);
+           oled.setCursor(40,20);
+             oled.println(read3);
+             oled.setTextSize(1);
+              oled.setCursor(0,30);
+             oled.println("Button-1:-ECG");
+             oled.setTextSize(1);
+              oled.setCursor(0,40);6
+             oled.println("Button-2:-Temp");
+              oled.setTextSize(1);
+              oled.setCursor(0,50);
+             oled.println("Button-3:-B.P");
+             oled.display();   
+    newData = false;
+}
+}
